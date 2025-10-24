@@ -43,6 +43,11 @@ jobs:
       run: |
         docker build -t $IMAGE_NAME:latest .
 
+    - name: Install Trivy
+      run: |
+        wget https://github.com/aquasecurity/trivy/releases/download/v0.65.0/trivy_0.65.0_Linux-64bit.deb
+        sudo dpkg -i trivy_0.65.0_Linux-64bit.deb
+
     - name: Run Trivy vulnerability scanner
       run: |
         trivy image $IMAGE_NAME:latest --format sarif --output trivy-results.sarif
