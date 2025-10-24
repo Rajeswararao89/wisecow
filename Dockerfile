@@ -13,8 +13,8 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# Copy the application script
-COPY wisecow.sh /usr/local/bin/wisecow.sh
+# Copy the application script (using the actual filename wisecow-fixed.sh)
+COPY wisecow-fixed.sh /usr/local/bin/wisecow.sh
 
 # Make the script executable
 RUN chmod +x /usr/local/bin/wisecow.sh
