@@ -115,15 +115,18 @@ jobs:
 
     - name: Set up TLS certificates
       run: |
-        # Generate TLS certificates
         mkdir -p tls
         openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-            -keyout tls/tls.key \
-            -out tls/tls.crt \
-            -subj "/CN=wisecow.local/O=wisecow" 2>/dev/null
-        
-        # Create Kubernetes TLS secret
+        -keyout tls/tls.key \
+        -out tls/tls.crt \
+        -subj "/CN=wisecow.local/O=wisecow" 2>/dev/null
+    
+        # Delete if exists, then create fresh
+        kubectl delete secret wisecow-tls --ignore-not-found=true
         kubectl create secret tls wisecow-tls --key tls/tls.key --cert tls/tls.crt
+    
+        echo "TLS secret created successfully"
+
 
     - name: Deploy to Kubernetes with TLS
       run: |
