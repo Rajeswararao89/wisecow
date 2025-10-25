@@ -97,9 +97,10 @@ jobs:
         # Install Nginx Ingress Controller
         kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml
         # Simple wait - no specific selector
-        sleep 45
-        kubectl get pods -n ingress-nginx
-        echo "Ingress controller ready for TLS setup"
+        kubectl wait --namespace ingress-nginx \
+          --for=condition=ready pod \
+          --selector=app.kubernetes.io/component=controller \
+          --timeout=180s
         
     - name: Build and load image to Kind
       run: |
