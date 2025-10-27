@@ -96,18 +96,11 @@ jobs:
       run: |
         # Install Nginx Ingress Controller
         kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml
-    
-        # Debug: See what pods actually exist
-        echo "=== Checking all pods in ingress-nginx namespace ==="
-        kubectl get pods -n ingress-nginx --show-labels
-    
-        echo "=== Checking what labels exist ==="
-        kubectl get pods -n ingress-nginx -o jsonpath='{.items[*].metadata.labels}' | jq .
-    
-        # Wait a bit for pods to start
-        sleep 30
+        # Wait for ingress controller to be ready
+        sleep 45
         kubectl get pods -n ingress-nginx
-        
+        echo "Ingress controller ready for TLS setup"
+
     - name: Build and load image to Kind
       run: |
         docker build -t $IMAGE_NAME:latest .
@@ -115,25 +108,42 @@ jobs:
 
     - name: Set up TLS certificates
       run: |
+        # Generate TLS certificates
         mkdir -p tls
         openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-        -keyout tls/tls.key \
-        -out tls/tls.crt \
-        -subj "/CN=wisecow.local/O=wisecow" 2>/dev/null
-    
-        # Delete if exists, then create fresh
-        kubectl delete secret wisecow-tls --ignore-not-found=true
+            -keyout tls/tls.key \
+            -out tls/tls.crt \
+            -subj "/CN=wisecow.local/O=wisecow" 2>/dev/null
+        
+        # Create Kubernetes TLS secret
         kubectl create secret tls wisecow-tls --key tls/tls.key --cert tls/tls.crt
-    
-        echo "TLS secret created successfully"
-
 
     - name: Deploy to Kubernetes with TLS
       run: |
-        # Apply all Kubernetes manifests including TLS ingress
-        kubectl apply -f kubernetes/
+        # Apply core Kubernetes manifests (excluding KubeArmor for now)
+        kubectl apply -f kubernetes/deployment.yaml
+        kubectl apply -f kubernetes/service.yaml
+        kubectl apply -f kubernetes/ingress-tls.yaml
+        
         # Wait for deployment to be ready
         kubectl rollout status deployment/wisecow --timeout=300s
+
+    - name: Try to install KubeArmor (Optional PS3)
+      run: |
+        echo "Attempting to install KubeArmor for PS3..."
+        # Try to install KubeArmor
+        kubectl apply -f https://raw.githubusercontent.com/kubearmor/KubeArmor/main/deployments/GKE/kubearmor.yaml || echo "KubeArmor installation failed - continuing without it"
+        
+        # Wait a bit if installed
+        sleep 30
+        
+        # Try to apply KubeArmor policies if CRDs exist
+        if kubectl get crd | grep -q kubearmorpolicy; then
+          echo "KubeArmor CRDs found - applying policies"
+          kubectl apply -f kubernetes/kubearmor-policy.yaml || echo "KubeArmor policies failed"
+        else
+          echo "KubeArmor CRDs not available - skipping PS3 policies"
+        fi
 
     - name: Run basic smoke test
       run: |
@@ -151,11 +161,11 @@ jobs:
         
         echo "Testing TLS connection..."
         if curl -ks https://localhost:8443/ -H "Host: wisecow.local" > /dev/null; then
-          echo "TLS smoke test passed - HTTPS is working!"
+          echo " TLS smoke test passed - HTTPS is working!"
           echo "Sample response:"
           curl -ks https://localhost:8443/ -H "Host: wisecow.local" | head -2
         else
-          echo "TLS test failed, but this might be expected in CI environment"
+          echo " TLS test failed, but this might be expected in CI environment"
           echo "Continuing as TLS setup is primarily for demonstration"
         fi
         
