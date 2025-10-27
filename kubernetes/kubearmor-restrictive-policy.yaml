@@ -1,0 +1,43 @@
+apiVersion: security.kubearmor.com/v1
+kind: KubeArmorPolicy
+metadata:
+  name: wisecow-restrictive-policy
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      app: wisecow
+  action:
+    Block
+  file:
+    matchDirectories:
+    - dir: /etc/
+      recursive: true
+    - dir: /var/
+      recursive: true
+    - dir: /usr/bin/
+      recursive: true
+    - dir: /bin/
+      recursive: true
+    matchPaths:
+    - path: /usr/games/cowsay
+    - path: /usr/games/fortune
+    - path: /bin/nc
+    - path: /bin/bash
+  process:
+    matchPaths:
+    - path: /usr/games/cowsay
+    - path: /usr/games/fortune
+    - path: /bin/nc
+  network:
+    matchProtocols:
+    - fromSource:
+      - path: /usr/local/bin/wisecow.sh
+      protocol: TCP
+      port: 4499
+  severity: 7
+  message: "Restrictive policy for WiseCow - will generate violations for testing"
+  tags:
+  - "Restrictive"
+  - "WiseCow"
+  - "ViolationTest"
