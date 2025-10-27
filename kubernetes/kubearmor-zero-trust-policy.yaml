@@ -1,0 +1,37 @@
+apiVersion: security.kubearmor.com/v1
+kind: KubeArmorPolicy
+metadata:
+  name: wisecow-zero-trust
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      app: wisecow
+  action:
+    Block # Default deny, explicit allow
+  file:
+    matchPaths:
+    - path: /usr/local/bin/wisecow.sh
+    - path: /usr/games/cowsay
+    - path: /usr/games/fortune
+    - path: /bin/nc
+    - path: /bin/bash
+  process:
+    matchPaths:
+    - path: /usr/local/bin/wisecow.sh
+    - path: /usr/games/cowsay
+    - path: /usr/games/fortune  
+    - path: /bin/nc
+    - path: /bin/bash
+  network:
+    matchProtocols:
+    - fromSource:
+      - path: /usr/local/bin/wisecow.sh
+      protocol: TCP
+      port: 4499
+  severity: 5
+  message: "Zero-trust policy: Only allow necessary processes and network"
+  tags:
+  - "ZeroTrust"
+  - "WiseCow"
+  - "PS3"
