@@ -128,7 +128,7 @@ jobs:
         # Wait for deployment to be ready
         kubectl rollout status deployment/wisecow --timeout=300s
 
-    - name: Try to install KubeArmor (Optional PS3)
+    - name: install KubeArmor 
       run: |
         echo "Attempting to install KubeArmor for PS3..."
         # Try to install KubeArmor
