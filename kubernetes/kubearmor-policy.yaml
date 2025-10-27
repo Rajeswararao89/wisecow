@@ -1,0 +1,41 @@
+apiVersion: security.kubearmor.com/v1
+kind: KubeArmorPolicy
+metadata:
+  name: wisecow-zero-trust-policy
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      app: wisecow
+  action:
+    Allow
+  file:
+    matchPaths:
+    - path: /usr/local/bin/wisecow.sh
+    - path: /usr/games/cowsay
+    - path: /usr/games/fortune
+    - path: /bin/nc
+    - path: /bin/bash
+    - path: /tmp/response
+  process:
+    matchPaths:
+    - path: /usr/local/bin/wisecow.sh
+    - path: /usr/games/cowsay  
+    - path: /usr/games/fortune
+    - path: /bin/nc
+    - path: /bin/bash
+  network:
+    matchProtocols:
+    - fromSource:
+      - path: /usr/local/bin/wisecow.sh
+      protocol: TCP
+      port: 4499
+  capabilities:
+    matchCapabilities:
+    - capability: NET_BIND_SERVICE
+  severity: 5
+  message: "Zero-trust policy for WiseCow application"
+  tags:
+  - "ZeroTrust"
+  - "WiseCow"
+  - "Production"
